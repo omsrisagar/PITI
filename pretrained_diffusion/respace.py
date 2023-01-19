@@ -129,6 +129,6 @@ class _WrappedModel:
     def __call__(self, x, ts, **kwargs):
         map_tensor = th.tensor(self.timestep_map, device=ts.device, dtype=ts.dtype)
         new_ts = map_tensor[ts]
-        if self.rescale_timesteps:
+        if self.rescale_timesteps: # what is this for?
             new_ts = new_ts.float() * (1000.0 / self.original_num_steps)
         return self.model(x, new_ts, **kwargs)

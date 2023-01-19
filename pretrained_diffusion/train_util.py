@@ -84,13 +84,13 @@ class TrainLoop:
         self.global_batch = self.batch_size * dist.get_world_size()
 
         if use_vgg:
-            self.vgg = VGG(conv_index='22').to(dist_util.dev())
+            self.vgg = VGG(conv_index='22').to(dist_util.dev()) # we are not updating these parameters
             print('use perc')
         else:
             self.vgg = None
 
         if use_gan:
-            self.adv = AdversarialLoss()
+            self.adv = AdversarialLoss() # we are updating/learning the discriminator parameters here
             print('use adv')
         else:
             self.adv = None
@@ -232,7 +232,7 @@ class TrainLoop:
             last_batch = (i + self.microbatch) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
              
-            if self.step <100:
+            if self.step <100: # first 100 training steps, we don't enable vgg and adv as predicted image is mostly noise
                 vgg_loss = None
                 adv_loss = None
             else:
@@ -285,7 +285,7 @@ class TrainLoop:
             if img_id >= self.glide_options['num_samples']:
                 break
 
-            batch, model_kwargs = next(self.val_data)              
+            batch, model_kwargs = next(self.val_data) # uncond_p=0 here, so always real ref
             with th.no_grad():
                 samples=sample(
                     glide_model=inner_model,

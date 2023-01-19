@@ -46,14 +46,14 @@ def sample(
     model_kwargs = {}
     model_kwargs['ref'] =  th.cat([cond_ref, uncond_ref], 0).to(dist_util.dev())
 
-    def cfg_model_fn(x_t, ts, **kwargs):
-        half = x_t[: len(x_t) // 2]
-        combined = th.cat([half, half], dim=0)
-        model_out = glide_model(combined, ts, **kwargs)
+    def cfg_model_fn(x_t, ts, **kwargs): #cfg is classifier free guidance
+        half = x_t[: len(x_t) // 2] # we are discarding the second half batch and working only with first half at # every reverse diffusion timestep!
+        combined = th.cat([half, half], dim=0) # x_t and combined are not same because x_t two halfs are not same. # we are doing this because we want cond_eps (eps(x_t|y)), uncond_eps (eps(x_t)) to have same input x_t
+        model_out = glide_model(combined, ts, **kwargs) # first half of kwargs is cond_ref, second half is all ones.
         eps, rest = model_out[:, :3], model_out[:, 3:]
         cond_eps, uncond_eps = th.split(eps, len(eps) // 2, dim=0)
  
-        half_eps = uncond_eps + guidance_scale * (cond_eps - uncond_eps)
+        half_eps = uncond_eps + guidance_scale * (cond_eps - uncond_eps) # as per PITI paper first term should be cond_eps
 
         eps = th.cat([half_eps, half_eps], dim=0)
         return th.cat([eps, rest], dim=1)
@@ -63,7 +63,7 @@ def sample(
         model_kwargs['low_res'] = prompt['low_res'].to(dist_util.dev())
         noise = th.randn((batch_size, 3, side_y, side_x), device=device) * upsample_temp
         model_fn = glide_model # just use the base model, no need for CFG.
-        model_kwargs['ref'] =  model_kwargs['ref'][:batch_size]
+        model_kwargs['ref'] =  model_kwargs['ref'][:batch_size] # so we are sending both low_res and ref during sampling
 
         samples = eval_diffusion.p_sample_loop(
         model_fn,

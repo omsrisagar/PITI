@@ -7,6 +7,7 @@ import PIL.Image
 import sys
 import torch
 import os
+import glob
 
 ##########################################################
 
@@ -15,6 +16,8 @@ assert(int(str('').join(torch.__version__.split('.')[0:2])) >= 13) # requires at
 torch.set_grad_enabled(False) # make sure to not compute gradients for computational performance
 
 torch.backends.cudnn.enabled = True # make sure to use cudnn for computational performance
+
+arguments_strModel = 'bsds500' # only 'bsds500' for now
 
 ##########################################################
 
@@ -130,12 +133,15 @@ def estimate(tenInput):
 ##########################################################
 
 if __name__ == '__main__':
-    path = "/mnt/blob/dataset/Imagenet-new/ImageNet/val/"
-    save_path2 = "/mnt/blob/dataset/Flickr/train_sketch"
-    save_path1 = "/mnt/blob/dataset/Flickr/train_img"
-    files = glob.glob(path)
+    # path = "/mnt/blob/dataset/Imagenet-new/ImageNet/val/"
+    # save_path2 = "/mnt/blob/dataset/Flickr/train_sketch"
+    # save_path1 = "/mnt/blob/dataset/Flickr/train_img"
+    path = "dataset/COCO-STUFF/val2017/"
+    save_path1 = "dataset/COCO-STUFF/val_img/"
+    save_path2 = "dataset/COCO-Sketch/val_sketch/"
+    files = [os.path.basename(p) for p in glob.glob(path + '*')]
     for file in files:
-        print(file)
+        # print(file)
         full = os.path.join(path, file)
         inimg = PIL.Image.open(full).convert('RGB').resize((256,256))
         tenInput = torch.FloatTensor(numpy.ascontiguousarray(numpy.array(inimg)[:, :, ::-1].transpose(2, 0, 1).astype(numpy.float32) * (1.0 / 255.0)))

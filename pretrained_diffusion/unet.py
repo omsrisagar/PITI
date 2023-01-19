@@ -29,7 +29,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
 
     def forward(self, x, emb, encoder_out=None):
         for layer in self:
-            if isinstance(layer, TimestepBlock):
+            if isinstance(layer, TimestepBlock): # some blocks within u-net take timestep embeddings (these are ResBlocks while others take transformer embeddings (these are AttentionBlocks)
                 x = layer(x, emb)
             elif isinstance(layer, AttentionBlock):
                 x = layer(x, encoder_out)

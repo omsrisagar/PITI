@@ -76,11 +76,11 @@ def load_data_sketch(
     )
     if deterministic:
         loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=False, num_workers=8, drop_last=True, pin_memory=False
+            dataset, batch_size=batch_size, shuffle=False, num_workers=0, drop_last=True, pin_memory=False
         )
     else:
         loader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True, pin_memory=False
+            dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True, pin_memory=False
         )
     while True:
         yield from loader
@@ -111,7 +111,7 @@ class ImageDataset(Dataset):
         mode = '',
     ):
         super().__init__()
-        self.crop_size = 256
+        self.crop_size = 256 # why are these both hard coded instead of setting to resolution?
         self.resize_size = 256
         self.local_images = image_paths[shard:][::num_shards]
         self.local_classes = None if classes is None else classes[shard:][::num_shards]
@@ -146,7 +146,7 @@ class ImageDataset(Dataset):
             pil_image2.load()
             pil_image2 = pil_image2.convert("L")
 
- 
+        # transforms to resize and crop and filp to transform pil_image2 to resize_size and crop_size. 256x256
         params =  get_params(pil_image2.size, self.resize_size, self.crop_size)
         transform_label = get_transform(params, self.resize_size, self.crop_size, method=Image.NEAREST, crop =self.random_crop, flip=self.random_flip)
         label_pil = transform_label(pil_image2)
@@ -161,7 +161,7 @@ class ImageDataset(Dataset):
         transform_image = get_transform( params, self.resize_size, self.crop_size, crop =self.random_crop, flip=self.random_flip)
         image_pil = transform_image(pil_image)
         if self.resolution < 256:
-            image_pil = image_pil.resize((self.resolution, self.resolution), Image.BICUBIC)
+            image_pil = image_pil.resize((self.resolution, self.resolution), Image.BICUBIC) # why no resizing for label?
         image_tensor = get_tensor()(image_pil)
 
         if self.down_sample_img:
@@ -171,7 +171,7 @@ class ImageDataset(Dataset):
             data_dict = {"ref":label_tensor, "low_res":down_sampled_image, "ref_ori":label_tensor_ori, "path": path}
             return image_tensor, data_dict
 
-        if random.random() < self.uncond_p:
+        if random.random() < self.uncond_p: # unconditional (null condition) training
             label_tensor = th.ones_like(label_tensor)
         data_dict = {"ref":label_tensor, "ref_ori":label_tensor_ori, "path": path}
  

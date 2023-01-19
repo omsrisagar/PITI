@@ -33,7 +33,7 @@ class AdversarialLoss(nn.Module):
             )
    
     def forward(self, fake, real):
-        fake_detach = fake.detach()
+        fake_detach = fake.detach() # this is used to optimize the discriminator itself and indirectly affects diffus.
         for _ in range(self.gan_k):
             self.optimizer.zero_grad()
             d_fake = self.discriminator(fake_detach)
@@ -60,7 +60,7 @@ class AdversarialLoss(nn.Module):
             loss_d.backward()
             self.optimizer.step()
 
-        d_fake_for_g = self.discriminator(fake)
+        d_fake_for_g = self.discriminator(fake) # this is the only one going to affect the diffusion loss
         if (self.gan_type.find('WGAN') >= 0):
             loss_g = -d_fake_for_g 
     

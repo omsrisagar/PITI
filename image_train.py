@@ -15,15 +15,21 @@ from pretrained_diffusion.script_util import (
     add_dict_to_argparser,)
 from pretrained_diffusion.train_util import TrainLoop
 import torch
+import sys
+# sys.path.append("~/pycharm-professional/debug-eggs/pydevd-pycharm.egg")
+import pydevd_pycharm
+pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True,
+                        stderrToServer=True)
+
 
 def main():
     args = create_argparser().parse_args()
     dist_util.setup_dist()
 
-    options=args_to_dict(args, model_and_diffusion_defaults(args.super_res).keys())
+    options=args_to_dict(args, model_and_diffusion_defaults(args.super_res).keys()) # options only corresponding to model and diffusion
     model, diffusion = create_model_and_diffusion(**options)
 
-    options=args_to_dict(args)
+    options=args_to_dict(args) # ALL the options
     if dist.get_rank() == 0:
         logger.save_args(options)
 
@@ -33,8 +39,8 @@ def main():
         model_ckpt = dist_util.load_state_dict(args.model_path, map_location="cpu")
 
         for k  in list(model_ckpt.keys()):
-            if k.startswith("transformer") and 'transformer_proj'  not in k:
-                # print(f"Removing key {k} from pretrained checkpoint")
+            if k.startswith("transformer") and 'transformer_proj'  not in k: # total 16 transformer.resblocks
+                # print(f"Removing key {k} from pretrained checkpoint") # because we are loading only decoder here, # so need to remove all encoder params
                 del model_ckpt[k]
             if k.startswith("padding_embedding") or k.startswith("positional_embedding") or k.startswith("token_embedding") or k.startswith("final_ln"):
                 # print(f"Removing key {k} from pretrained checkpoint")

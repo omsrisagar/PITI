@@ -17,7 +17,7 @@ class VGG(nn.Module):
 
         vgg_mean = (0.485, 0.456, 0.406)
         vgg_std = (0.229 * rgb_range, 0.224 * rgb_range, 0.225 * rgb_range)
-        self.sub_mean =  MeanShift(rgb_range, vgg_mean, vgg_std)
+        self.sub_mean =  MeanShift(rgb_range, vgg_mean, vgg_std) # there is no forward() because this extends nn.Conv2d
         for p in self.parameters():
             p.requires_grad = False
 

@@ -1,0 +1,16 @@
+Questions:
+
+Eq. for updating cond_eps seems to be inconsistent with the one in PITI paper. (glide_util.py:56)
+Why do we have to condition on sketch for super resolution as well? I don't think it is needed.
+
+
+Notes:
+
+From prediction (eps), find x_start. Use x_start and x_t to get distribution (mu and sigma) for x_t-1.
+During training, 20% of the time, the ref image is set to all ones (i.e., unconditional).
+During sampling, we get the output of the model for both conditional and unconditional inputs. Then we follow the classifier-free guidance equation in PITI paper to update the eps at each step from the eps's actually predicted by the model. We keep only this "new eps" and discard the other half corresponding to unconditional eps (as it has been used above to get this new eps).
+
+steps to create obayashi environment for stable diffusion
+conda install pytorch torchvision torchaudio pytorch-cuda=11.7 xformers -c pytorch -c nvidia -c xformers/label/dev -c nvidia/label/cuda-11.7.1
+conda install accelerate datasets transformers -c huggingface -c conda-forge 
+pip install bitsandbytes

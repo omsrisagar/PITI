@@ -33,7 +33,7 @@ class Text2ImModel(nn.Module):
     ):
         super().__init__()
         self.encoder = Encoder(img_size=image_size, patch_size=image_size//16, in_chans=n_class,
-                 xf_width=xf_width, xf_layers=8, xf_heads=xf_heads, model_channels=model_channels)
+                 xf_width=xf_width, xf_layers=8, xf_heads=xf_heads, model_channels=model_channels) # xf_layers hardcode
 
         self.in_channels = in_channels
         self.decoder = Text2ImUNet(
@@ -55,8 +55,8 @@ class Text2ImModel(nn.Module):
 
 
     def forward(self, xt, timesteps, ref=None, uncond_p=0.0):
-        latent_outputs =self.encoder(ref, uncond_p)
-        pred = self.decoder(xt, timesteps, latent_outputs)
+        latent_outputs =self.encoder(ref, uncond_p) # cnn followed by transformer; 2 outputs xf_proj 2x512; xf_out # 2x512x256# # uncond_p # is not # being # passed as # input, it is static 0
+        pred = self.decoder(xt, timesteps, latent_outputs) # converts everything to 64x64 at the end
         return pred
 
 
@@ -77,7 +77,7 @@ class Text2ImUNet(UNetModel):
         xf_proj = self.transformer_proj(xf_proj) ###
         emb = emb + xf_proj.to(emb)
  
-        h = x.type(self.dtype)
+        h = x.type(self.dtype) # batch_size x 3 x W x H
         for module in self.input_blocks:
             h = module(h, emb, xf_out)
             hs.append(h)
@@ -85,8 +85,8 @@ class Text2ImUNet(UNetModel):
         for module in self.output_blocks:
             h = th.cat([h, hs.pop()], dim=1)
             h = module(h, emb, xf_out)
-        h = h.type(x.dtype)
-        h = self.out(h)
+        h = h.type(x.dtype) # batch_size x model_channels (192) x W x H
+        h = self.out(h)# batch_size x out_channels (3 or 6) x W x H
         return h
 
 
@@ -125,10 +125,10 @@ class Encoder(nn.Module):
         x = th.cat((x, cls_tokens), dim=1)
 
         xf_out = self.transformer(x)
-        if self.final_ln is not None:
+        if self.final_ln is not None: #ln is layer normalization
             xf_out = self.final_ln(xf_out)
     
-        xf_proj = xf_out[:, -1]
+        xf_proj = xf_out[:, -1] # I think this is xf_out[:, -1, :]
         xf_out = xf_out[:, :-1].permute(0, 2, 1)  # NLC -> NCL
 
         outputs = dict(xf_proj=xf_proj, xf_out=xf_out)
